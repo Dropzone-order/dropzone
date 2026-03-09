@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Login — Dropzone Collection</title>
+  <link rel="stylesheet" href="/css/style.css"/>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@400;600;700&family=Space+Mono&display=swap" rel="stylesheet">
+</head>
+<body>
+<nav class="navbar" id="navbar">
+  <div class="nav-brand"><a href="/"><img src="/images/logo.png" class="nav-logo"/></a></div>
+  <ul class="nav-links">
+    <li><a href="/">HOME</a></li>
+    <li><a href="/pages/shop.html">SHOP</a></li>
+  </ul>
+  <div class="nav-actions">
+    <a href="/pages/cart.html" class="cart-icon">🛒 <span class="cart-count" id="cartCount">0</span></a>
+  </div>
+  <button class="hamburger" id="hamburger">☰</button>
+</nav>
+
+<div class="form-page">
+  <div class="form-box">
+    <div style="text-align:center;margin-bottom:24px">
+      <img src="/images/logo.png" style="height:70px"/>
+    </div>
+    <h2 class="form-title">LOGIN</h2>
+    <p class="form-subtitle">// ACCESS YOUR ACCOUNT</p>
+    <div id="errMsg" class="error-msg" style="display:none"></div>
+    <div class="form-group">
+      <label>EMAIL</label>
+      <input type="email" id="email" placeholder="your@email.com"/>
+    </div>
+    <div class="form-group">
+      <label>PASSWORD</label>
+      <input type="password" id="password" placeholder="••••••••"/>
+    </div>
+    <button class="form-btn" onclick="handleLogin()">LOGIN</button>
+    <div class="form-link">
+      Don't have an account? <a href="/pages/register.html">REGISTER</a>
+    </div>
+  </div>
+</div>
+
+<script src="/js/app.js"></script>
+<script>
+  async function handleLogin() {
+    const email = document.getElementById('email').value.trim();
+    const password = document.getElementById('password').value;
+    const err = document.getElementById('errMsg');
+
+    if (!email || !password) { err.style.display='block'; err.textContent='Fill in all fields'; return; }
+
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+      const data = await res.json();
+      if (data.token) {
+        setAuth(data);
+        window.location.href = '/';
+      } else {
+        err.style.display = 'block';
+        err.textContent = data.message || 'Login failed';
+      }
+    } catch(e) {
+      err.style.display = 'block';
+      err.textContent = 'Server error. Try again.';
+    }
+  }
+
+  document.addEventListener('keydown', e => { if (e.key === 'Enter') handleLogin(); });
+</script>
+</body>
+</html>

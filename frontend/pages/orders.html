@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>My Orders — Dropzone Collection</title>
+  <link rel="stylesheet" href="/css/style.css"/>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@400;600;700&family=Space+Mono&display=swap" rel="stylesheet">
+</head>
+<body>
+<nav class="navbar" id="navbar">
+  <div class="nav-brand"><a href="/"><img src="/images/logo.png" class="nav-logo"/></a></div>
+  <ul class="nav-links">
+    <li><a href="/">HOME</a></li><li><a href="/pages/shop.html">SHOP</a></li>
+    <li><a href="/pages/orders.html" id="ordersLink">ORDERS</a></li>
+    <li><a href="/pages/admin.html" id="adminLink" style="display:none">ADMIN</a></li>
+  </ul>
+  <div class="nav-actions">
+    <a href="/pages/cart.html" class="cart-icon">🛒 <span class="cart-count" id="cartCount">0</span></a>
+    <div id="userMenu" style="display:none">
+      <span class="user-name" id="userName"></span>
+      <button onclick="logout()" class="btn-outline">LOGOUT</button>
+    </div>
+  </div>
+  <button class="hamburger" id="hamburger">☰</button>
+</nav>
+
+<section class="orders-page">
+  <h1 class="page-title">MY ORDERS</h1>
+  <div id="successBanner" style="display:none" class="success-msg">
+    ✅ Order placed successfully! We'll confirm shortly.
+  </div>
+  <div id="ordersList"><div class="loading-spinner">LOADING ORDERS...</div></div>
+</section>
+
+<script src="/js/app.js"></script>
+<script>
+  if (!getToken()) window.location.href = '/pages/login.html';
+
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('success')) document.getElementById('successBanner').style.display = 'block';
+
+  async function loadOrders() {
+    try {
+      const orders = await apiGet('/api/orders/mine');
+      const list = document.getElementById('ordersList');
+      if (!orders.length) {
+        list.innerHTML = `<div style="text-align:center;padding:60px 0">
+          <p style="font-family:var(--font-mono);color:var(--grey);letter-spacing:3px;margin-bottom:24px">NO ORDERS YET</p>
+          <a href="/pages/shop.html" class="btn-primary">SHOP NOW</a>
+        </div>`;
+        return;
+      }
+
+      list.innerHTML = orders.map(o => `
+        <div class="order-card">
+          <div class="order-header">
+            <div>
+              <div class="order-id">ORDER #${o._id.slice(-8).toUpperCase()}</div>
+              <div style="font-family:var(--font-mono);font-size:11px;color:var(--grey);margin-top:4px">
+                ${new Date(o.createdAt).toLocaleDateString('en-IN', {day:'numeric',month:'short',year:'numeric'})}
+              </div>
+            </div>
+            <span class="order-status status-${o.orderStatus}">${o.orderStatus.toUpperCase()}</span>
+          </div>
+          <div style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap">
+            ${o.items.map(item => `
+              <div style="display:flex;gap:10px;align-items:center;background:var(--dark2);padding:10px;border:1px solid #222">
+                <img src="${item.image || '/images/tshirt1.jpeg'}" style="width:50px;height:55px;object-fit:cover"/>
+                <div>
+                  <div style="font-family:var(--font-display);font-size:16px">${item.name}</div>
+                  <div style="font-family:var(--font-mono);font-size:11px;color:var(--grey)">Size: ${item.size} | Qty: ${item.quantity}</div>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div style="font-family:var(--font-mono);font-size:13px;color:var(--accent)">TOTAL: ₹${o.totalAmount}</div>
+            ${o.delhiveryWaybill ? `
+              <a href="https://www.delhivery.com/track/package/${o.delhiveryWaybill}" target="_blank" class="btn-outline" style="font-size:13px">
+                TRACK ORDER
+              </a>` : ''}
+          </div>
+        </div>
+      `).join('');
+    } catch(e) {
+      document.getElementById('ordersList').innerHTML = '<p class="no-products">Failed to load orders.</p>';
+    }
+  }
+
+  loadOrders();
+</script>
+</body>
+</html>

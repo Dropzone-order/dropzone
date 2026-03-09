@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Product — Dropzone Collection</title>
+  <link rel="stylesheet" href="/css/style.css"/>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@400;600;700&family=Space+Mono&display=swap" rel="stylesheet">
+</head>
+<body>
+<nav class="navbar" id="navbar">
+  <div class="nav-brand"><a href="/"><img src="/images/logo.png" class="nav-logo"/></a></div>
+  <ul class="nav-links">
+    <li><a href="/">HOME</a></li>
+    <li><a href="/pages/shop.html">SHOP</a></li>
+    <li><a href="/pages/orders.html" id="ordersLink" style="display:none">ORDERS</a></li>
+    <li><a href="/pages/admin.html" id="adminLink" style="display:none">ADMIN</a></li>
+  </ul>
+  <div class="nav-actions">
+    <a href="/pages/cart.html" class="cart-icon">🛒 <span class="cart-count" id="cartCount">0</span></a>
+    <div id="authButtons"><a href="/pages/login.html" class="btn-outline">LOGIN</a></div>
+    <div id="userMenu" style="display:none">
+      <span class="user-name" id="userName"></span>
+      <button onclick="logout()" class="btn-outline">LOGOUT</button>
+    </div>
+  </div>
+  <button class="hamburger" id="hamburger">☰</button>
+</nav>
+
+<section class="product-detail" id="productDetail">
+  <div class="loading-spinner">LOADING...</div>
+</section>
+
+<script src="/js/app.js"></script>
+<script>
+  let currentProduct = null;
+  let selectedSize = null;
+
+  async function loadProduct() {
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get('id');
+    if (!id) { window.location.href = '/pages/shop.html'; return; }
+
+    try {
+      const res = await fetch(`/api/products/${id}`);
+      const p = await res.json();
+      currentProduct = p;
+      document.title = `${p.name} — Dropzone Collection`;
+
+      const img = p.images && p.images[0] ? p.images[0] : '/images/tshirt1.jpeg';
+      document.getElementById('productDetail').innerHTML = `
+        <div style="margin-bottom:20px">
+          <a href="/pages/shop.html" style="font-family:var(--font-mono);font-size:12px;color:var(--grey);letter-spacing:2px">← BACK TO SHOP</a>
+        </div>
+        <div class="product-detail-grid">
+          <div>
+            <img src="${img}" alt="${p.name}" class="product-detail-img"/>
+          </div>
+          <div class="product-detail-info">
+            <span style="font-family:var(--font-mono);font-size:11px;letter-spacing:3px;color:var(--maroon-bright)">// DROP</span>
+            <h1>${p.name}</h1>
+            <div class="product-detail-price">₹${p.price}</div>
+            <p class="product-detail-desc">${p.description}</p>
+
+            ${p.sizes && p.sizes.length ? `
+            <div class="size-selector">
+              <label>SELECT SIZE</label>
+              <div class="sizes" id="sizeOptions">
+                ${p.sizes.map(s => `<button class="size-btn" onclick="selectSize('${s}',this)">${s}</button>`).join('')}
+              </div>
+            </div>` : ''}
+
+            <div class="pincode-check">
+              <input type="text" id="pincodeInput" placeholder="Check delivery pincode" maxlength="6"/>
+              <button class="btn-outline" onclick="checkPincode()">CHECK</button>
+            </div>
+            <div class="pincode-result" id="pincodeResult"></div>
+
+            <button class="add-to-cart-btn" onclick="handleAddToCart()">
+              ADD TO CART — ₹${p.price}
+            </button>
+          </div>
+        </div>
+      `;
+    } catch(e) {
+      document.getElementById('productDetail').innerHTML = '<p class="no-products">Product not found.</p>';
+    }
+  }
+
+  function selectSize(size, btn) {
+    selectedSize = size;
+    document.querySelectorAll('.size-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  }
+
+  function handleAddToCart() {
+    if (!currentProduct) return;
+    if (currentProduct.sizes && currentProduct.sizes.length && !selectedSize) {
+      showToast('Please select a size');
+      return;
+    }
+    addToCart(currentProduct, selectedSize || 'One Size');
+  }
+
+  async function checkPincode() {
+    const pin = document.getElementById('pincodeInput').value.trim();
+    if (pin.length !== 6) { showToast('Enter valid 6-digit pincode'); return; }
+    const result = document.getElementById('pincodeResult');
+    result.textContent = 'Checking...';
+    try {
+      const res = await fetch(`/api/shipping/check/${pin}`);
+      const data = await res.json();
+      if (data.serviceable) {
+        result.innerHTML = '<span class="serviceable">✅ Delivery available to this pincode</span>';
+      } else {
+        result.innerHTML = '<span class="not-serviceable">❌ Delivery not available to this pincode</span>';
+      }
+    } catch(e) {
+      result.innerHTML = '<span class="not-serviceable">Could not check. Try again.</span>';
+    }
+  }
+
+  loadProduct();
+</script>
+</body>
+</html>

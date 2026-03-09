@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>DROPZONE COLLECTION</title>
+  <link rel="stylesheet" href="/css/style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@400;600;700&family=Space+Mono&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav class="navbar" id="navbar">
+  <div class="nav-brand">
+    <img src="/images/logo.png" alt="Dropzone" class="nav-logo" />
+  </div>
+  <ul class="nav-links">
+    <li><a href="/">HOME</a></li>
+    <li><a href="/pages/shop.html">SHOP</a></li>
+    <li><a href="/pages/orders.html" id="ordersLink" style="display:none">ORDERS</a></li>
+    <li><a href="/pages/admin.html" id="adminLink" style="display:none">ADMIN</a></li>
+  </ul>
+  <div class="nav-actions">
+    <a href="/pages/cart.html" class="cart-icon">
+      🛒 <span class="cart-count" id="cartCount">0</span>
+    </a>
+    <div id="authButtons">
+      <a href="/pages/login.html" class="btn-outline">LOGIN</a>
+    </div>
+    <div id="userMenu" style="display:none">
+      <span class="user-name" id="userName"></span>
+      <button onclick="logout()" class="btn-outline">LOGOUT</button>
+    </div>
+  </div>
+  <button class="hamburger" id="hamburger">☰</button>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-noise"></div>
+  <div class="hero-content">
+    <p class="hero-sub">LIMITED DROPS. BOLD CUTS.</p>
+    <h1 class="hero-title">DROP<span>ZONE</span></h1>
+    <p class="hero-tagline">COLLECTION</p>
+    <p class="hero-desc">Street-ready threads for those who don't follow — they lead.</p>
+    <a href="/pages/shop.html" class="btn-primary">SHOP THE DROP</a>
+  </div>
+  <div class="hero-logo-wrap">
+    <img src="/images/logo.png" alt="Dropzone" class="hero-logo-img" />
+  </div>
+</section>
+
+<!-- FEATURED -->
+<section class="featured-section">
+  <div class="section-header">
+    <span class="section-label">// NEW DROP</span>
+    <h2>LATEST COLLECTION</h2>
+  </div>
+  <div class="products-grid" id="featuredProducts">
+    <div class="loading-spinner">LOADING...</div>
+  </div>
+  <div class="center-btn">
+    <a href="/pages/shop.html" class="btn-primary">VIEW ALL</a>
+  </div>
+</section>
+
+<!-- WHY DROPZONE -->
+<section class="why-section">
+  <div class="why-grid">
+    <div class="why-item">
+      <span class="why-icon">⚡</span>
+      <h3>LIMITED DROPS</h3>
+      <p>Each piece is a limited run. Once it's gone, it's gone.</p>
+    </div>
+    <div class="why-item">
+      <span class="why-icon">🚚</span>
+      <h3>FAST SHIPPING</h3>
+      <p>Delivered via Delhivery across India. Track every step.</p>
+    </div>
+    <div class="why-item">
+      <span class="why-icon">🔒</span>
+      <h3>SECURE PAYMENT</h3>
+      <p>100% secure checkout via Razorpay. UPI, cards accepted.</p>
+    </div>
+    <div class="why-item">
+      <span class="why-icon">💎</span>
+      <h3>PREMIUM QUALITY</h3>
+      <p>Heavyweight fabrics. Bold prints. Built to last.</p>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer class="footer">
+  <div class="footer-brand">
+    <img src="/images/logo.png" alt="Dropzone" class="footer-logo" />
+    <p>DROPZONE COLLECTION</p>
+  </div>
+  <div class="footer-links">
+    <a href="/">Home</a>
+    <a href="/pages/shop.html">Shop</a>
+    <a href="/pages/cart.html">Cart</a>
+  </div>
+  <p class="footer-copy">© 2026 Dropzone Collection. All rights reserved.</p>
+</footer>
+
+<script src="/js/app.js"></script>
+<script>
+  // Load featured products
+  async function loadFeatured() {
+    try {
+      const res = await fetch('/api/products');
+      const products = await res.json();
+      const grid = document.getElementById('featuredProducts');
+      if (!products.length) {
+        grid.innerHTML = '<p class="no-products">No products yet. Check back soon.</p>';
+        return;
+      }
+      grid.innerHTML = products.slice(0, 3).map(p => productCard(p)).join('');
+    } catch(e) {
+      document.getElementById('featuredProducts').innerHTML = '<p class="no-products">Loading failed.</p>';
+    }
+  }
+  loadFeatured();
+</script>
+</body>
+</html>

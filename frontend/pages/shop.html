@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Shop — Dropzone Collection</title>
+  <link rel="stylesheet" href="/css/style.css"/>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@400;600;700&family=Space+Mono&display=swap" rel="stylesheet">
+</head>
+<body>
+<nav class="navbar" id="navbar">
+  <div class="nav-brand"><a href="/"><img src="/images/logo.png" class="nav-logo"/></a></div>
+  <ul class="nav-links">
+    <li><a href="/">HOME</a></li>
+    <li><a href="/pages/shop.html">SHOP</a></li>
+    <li><a href="/pages/orders.html" id="ordersLink" style="display:none">ORDERS</a></li>
+    <li><a href="/pages/admin.html" id="adminLink" style="display:none">ADMIN</a></li>
+  </ul>
+  <div class="nav-actions">
+    <a href="/pages/cart.html" class="cart-icon">🛒 <span class="cart-count" id="cartCount">0</span></a>
+    <div id="authButtons"><a href="/pages/login.html" class="btn-outline">LOGIN</a></div>
+    <div id="userMenu" style="display:none">
+      <span class="user-name" id="userName"></span>
+      <button onclick="logout()" class="btn-outline">LOGOUT</button>
+    </div>
+  </div>
+  <button class="hamburger" id="hamburger">☰</button>
+</nav>
+
+<section class="shop-page">
+  <div class="shop-header">
+    <span style="font-family:var(--font-mono);font-size:12px;letter-spacing:4px;color:var(--maroon-bright)">// ALL DROPS</span>
+    <h1 class="page-title">THE SHOP</h1>
+    <p>Every piece. Limited run. No restocks.</p>
+  </div>
+  <div class="products-grid" id="shopGrid">
+    <div class="loading-spinner">LOADING DROPS...</div>
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="footer-brand">
+    <img src="/images/logo.png" class="footer-logo"/>
+    <p>DROPZONE COLLECTION</p>
+  </div>
+  <div class="footer-links">
+    <a href="/">Home</a><a href="/pages/shop.html">Shop</a><a href="/pages/cart.html">Cart</a>
+  </div>
+  <p class="footer-copy">© 2026 Dropzone Collection. All rights reserved.</p>
+</footer>
+
+<script src="/js/app.js"></script>
+<script>
+  async function loadShop() {
+    try {
+      const res = await fetch('/api/products');
+      const products = await res.json();
+      const grid = document.getElementById('shopGrid');
+      if (!products.length) {
+        grid.innerHTML = '<p class="no-products">No drops yet. Coming soon.</p>';
+        return;
+      }
+      grid.innerHTML = products.map(p => productCard(p)).join('');
+    } catch(e) {
+      document.getElementById('shopGrid').innerHTML = '<p class="no-products">Failed to load. Try again.</p>';
+    }
+  }
+  loadShop();
+</script>
+</body>
+</html>

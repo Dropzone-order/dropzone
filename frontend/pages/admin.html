@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Admin — Dropzone Collection</title>
+  <link rel="stylesheet" href="/css/style.css"/>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@400;600;700&family=Space+Mono&display=swap" rel="stylesheet">
+</head>
+<body>
+<nav class="navbar" id="navbar">
+  <div class="nav-brand"><a href="/"><img src="/images/logo.png" class="nav-logo"/></a></div>
+  <ul class="nav-links">
+    <li><a href="/">HOME</a></li><li><a href="/pages/shop.html">SHOP</a></li>
+    <li><a href="/pages/orders.html">ORDERS</a></li>
+    <li><a href="/pages/admin.html">ADMIN</a></li>
+  </ul>
+  <div class="nav-actions">
+    <div id="userMenu" style="display:none">
+      <span class="user-name" id="userName"></span>
+      <button onclick="logout()" class="btn-outline">LOGOUT</button>
+    </div>
+  </div>
+  <button class="hamburger" id="hamburger">☰</button>
+</nav>
+
+<section class="admin-page">
+  <h1 class="page-title">ADMIN PANEL</h1>
+
+  <div class="admin-tabs">
+    <button class="admin-tab active" onclick="switchTab('products', this)">PRODUCTS</button>
+    <button class="admin-tab" onclick="switchTab('orders', this)">ORDERS</button>
+    <button class="admin-tab" onclick="switchTab('addProduct', this)">+ ADD PRODUCT</button>
+  </div>
+
+  <!-- PRODUCTS TAB -->
+  <div id="tab-products">
+    <div id="productsList"><div class="loading-spinner">LOADING...</div></div>
+  </div>
+
+  <!-- ORDERS TAB -->
+  <div id="tab-orders" style="display:none">
+    <div id="adminOrdersList"><div class="loading-spinner">LOADING...</div></div>
+  </div>
+
+  <!-- ADD PRODUCT TAB -->
+  <div id="tab-addProduct" style="display:none">
+    <div style="max-width:600px">
+      <div id="addMsg" style="display:none;margin-bottom:16px"></div>
+      <div class="form-group"><label>PRODUCT NAME</label><input type="text" id="pName" placeholder="e.g. Diamond Polo Tee"/></div>
+      <div class="form-group"><label>DESCRIPTION</label><textarea id="pDesc" rows="3" placeholder="Describe the product..."></textarea></div>
+      <div class="form-group"><label>PRICE (₹)</label><input type="number" id="pPrice" placeholder="100"/></div>
+      <div class="form-group"><label>SIZES (comma separated)</label><input type="text" id="pSizes" placeholder="S,M,L,XL,XXL"/></div>
+      <div class="form-group"><label>COLORS</label><input type="text" id="pColors" placeholder="Olive,Black,White"/></div>
+      <div class="form-group"><label>STOCK</label><input type="number" id="pStock" placeholder="10"/></div>
+      <div class="form-group"><label>PRODUCT IMAGES</label><input type="file" id="pImages" multiple accept="image/*" style="background:var(--dark2);border:1px solid #333;color:var(--white);padding:12px;width:100%"/></div>
+      <button class="btn-primary" onclick="addProduct()">ADD PRODUCT</button>
+    </div>
+  </div>
+</section>
+
+<script src="/js/app.js"></script>
+<script>
+  // Admin check
+  const user = getUser();
+  if (!user || !user.isAdmin) window.location.href = '/';
+
+  function switchTab(name, btn) {
+    document.querySelectorAll('.admin-tab').forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
+    ['products','orders','addProduct'].forEach(t => {
+      document.getElementById(`tab-${t}`).style.display = t === name ? 'block' : 'none';
+    });
+    if (name === 'products') loadAdminProducts();
+    if (name === 'orders') loadAdminOrders();
+  }
+
+  async function loadAdminProducts() {
+    const res = await fetch('/api/products');
+    const products = await res.json();
+    document.getElementById('productsList').innerHTML = `
+      <table class="admin-table">
+        <thead><tr><th>IMAGE</th><th>NAME</th><th>PRICE</th><th>STOCK</th><th>ACTION</th></tr></thead>
+        <tbody>
+          ${products.map(p => `
+            <tr>
+              <td><img src="${p.images?.[0] || '/images/tshirt1.jpeg'}" style="width:50px;height:55px;object-fit:cover"/></td>
+              <td>${p.name}</td>
+              <td style="font-family:var(--font-mono);color:var(--accent)">₹${p.price}</td>
+              <td>${p.stock}</td>
+              <td><button class="btn-danger" onclick="deleteProduct('${p._id}')">DELETE</button></td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>`;
+  }
+
+  async function loadAdminOrders() {
+    const orders = await apiGet('/api/orders');
+    document.getElementById('adminOrdersList').innerHTML = `
+      <table class="admin-table">
+        <thead><tr><th>ORDER ID</th><th>CUSTOMER</th><th>AMOUNT</th><th>PAYMENT</th><th>STATUS</th><th>SHIP</th></tr></thead>
+        <tbody>
+          ${orders.map(o => `
+            <tr>
+              <td style="font-family:var(--font-mono);font-size:12px">#${o._id.slice(-8).toUpperCase()}</td>
+              <td>${o.user?.name || 'N/A'}<br/><span style="font-family:var(--font-mono);font-size:11px;color:var(--grey)">${o.user?.email}</span></td>
+              <td style="font-family:var(--font-mono);color:var(--accent)">₹${o.totalAmount}</td>
+              <td><span class="order-status status-${o.paymentStatus === 'paid' ? 'delivered' : 'cancelled'}">${o.paymentStatus.toUpperCase()}</span></td>
+              <td>
+                <select onchange="updateStatus('${o._id}', this.value)" style="background:var(--dark2);border:1px solid #333;color:var(--white);padding:6px;font-family:var(--font-mono);font-size:11px">
+                  ${['placed','confirmed','shipped','delivered','cancelled'].map(s =>
+                    `<option value="${s}" ${o.orderStatus===s?'selected':''}>${s.toUpperCase()}</option>`
+                  ).join('')}
+                </select>
+              </td>
+              <td>
+                ${o.paymentStatus === 'paid' && o.orderStatus === 'confirmed' ?
+                  `<button class="btn-outline" onclick="createShipment('${o._id}')" style="font-size:12px;padding:6px 12px">SHIP</button>` :
+                  o.delhiveryWaybill ? `<span style="font-family:var(--font-mono);font-size:11px;color:var(--accent)">${o.delhiveryWaybill}</span>` : '-'
+                }
+              </td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>`;
+  }
+
+  async function updateStatus(orderId, status) {
+    await fetch(`/api/orders/${orderId}/status`, {
+      method: 'PUT', headers: authHeaders(),
+      body: JSON.stringify({ status })
+    });
+    showToast('Status updated');
+  }
+
+  async function createShipment(orderId) {
+    const res = await fetch('/api/shipping/create', {
+      method: 'POST', headers: authHeaders(),
+      body: JSON.stringify({ orderId })
+    });
+    const data = await res.json();
+    if (data.success) { showToast(`Shipment created! Waybill: ${data.waybill}`); loadAdminOrders(); }
+    else showToast('Shipment creation failed');
+  }
+
+  async function deleteProduct(id) {
+    if (!confirm('Delete this product?')) return;
+    await fetch(`/api/products/${id}`, { method: 'DELETE', headers: authHeaders() });
+    loadAdminProducts();
+    showToast('Product deleted');
+  }
+
+  async function addProduct() {
+    const name = document.getElementById('pName').value.trim();
+    const desc = document.getElementById('pDesc').value.trim();
+    const price = document.getElementById('pPrice').value;
+    const sizes = document.getElementById('pSizes').value.split(',').map(s => s.trim()).filter(Boolean);
+    const colors = document.getElementById('pColors').value.split(',').map(c => c.trim()).filter(Boolean);
+    const stock = document.getElementById('pStock').value || 10;
+    const files = document.getElementById('pImages').files;
+
+    const msg = document.getElementById('addMsg');
+
+    if (!name || !desc || !price) {
+      msg.style.display = 'block';
+      msg.className = 'error-msg';
+      msg.textContent = 'Name, description and price are required';
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('name', name);
+    formData.append('description', desc);
+    formData.append('price', price);
+    formData.append('sizes', JSON.stringify(sizes));
+    formData.append('colors', JSON.stringify(colors));
+    formData.append('stock', stock);
+    for (let f of files) formData.append('images', f);
+
+    const res = await fetch('/api/products', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${getToken()}` },
+      body: formData
+    });
+    const data = await res.json();
+    if (data._id) {
+      msg.style.display = 'block';
+      msg.className = 'success-msg';
+      msg.textContent = '✅ Product added successfully!';
+      document.getElementById('pName').value = '';
+      document.getElementById('pDesc').value = '';
+      document.getElementById('pPrice').value = '';
+    } else {
+      msg.style.display = 'block';
+      msg.className = 'error-msg';
+      msg.textContent = data.message || 'Failed to add product';
+    }
+  }
+
+  loadAdminProducts();
+</script>
+</body>
+</html>
